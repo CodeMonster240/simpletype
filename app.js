@@ -32,6 +32,7 @@ let gameState = {
     endTime: null,
     timer: null,
     timerInterval: null,
+    wpmTrackingInterval: null,
     wpmHistory: [],
     started: false,
     finished: false
@@ -163,10 +164,6 @@ function handleKeydown(e) {
     if (e.key === ' ') {
         e.preventDefault();
         checkWord();
-    } else if (e.key === 'Tab' && e.shiftKey) {
-        // Tab + Shift doesn't work well, so we use Tab + Enter for restart
-    } else if (e.key === 'Enter' && e.getModifierState && e.getModifierState('Tab')) {
-        resetTest();
     }
 }
 
@@ -232,7 +229,7 @@ function startTest() {
     }
     
     // Track WPM over time
-    setInterval(() => {
+    gameState.wpmTrackingInterval = setInterval(() => {
         if (gameState.started && !gameState.finished) {
             const wpm = calculateWPM();
             gameState.wpmHistory.push({
@@ -288,6 +285,10 @@ function endTest() {
     
     if (gameState.timerInterval) {
         clearInterval(gameState.timerInterval);
+    }
+    
+    if (gameState.wpmTrackingInterval) {
+        clearInterval(gameState.wpmTrackingInterval);
     }
     
     inputField.disabled = true;
@@ -451,6 +452,15 @@ function restartTest() {
 }
 
 function resetTest() {
+    // Clear any intervals
+    if (gameState.timerInterval) {
+        clearInterval(gameState.timerInterval);
+    }
+    
+    if (gameState.wpmTrackingInterval) {
+        clearInterval(gameState.wpmTrackingInterval);
+    }
+    
     // Reset game state
     gameState = {
         mode: gameState.mode,
@@ -466,6 +476,7 @@ function resetTest() {
         endTime: null,
         timer: null,
         timerInterval: null,
+        wpmTrackingInterval: null,
         wpmHistory: [],
         started: false,
         finished: false
@@ -485,9 +496,4 @@ function resetTest() {
     // Generate new words
     generateWords();
     renderWords();
-    
-    // Clear any intervals
-    if (gameState.timerInterval) {
-        clearInterval(gameState.timerInterval);
-    }
 }
