@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SimpleType - Minimalist Typing Test</title>
+    <link rel="stylesheet" href="style.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.js"></script>
+</head>
+<body>
+    <div class="container">
+        <!-- Header -->
+        <header class="header">
+            <h1 class="logo">SimpleType</h1>
+            <div class="tagline">A minimalist typing test</div>
+        </header>
+
+        <!-- Mode Selection -->
+        <div class="mode-container glass">
+            <div class="mode-selector">
+                <button class="mode-btn active" data-mode="words">
+                    <span class="icon">📝</span>
+                    <span>Words</span>
+                </button>
+                <button class="mode-btn" data-mode="time">
+                    <span class="icon">⏱️</span>
+                    <span>Time</span>
+                </button>
+            </div>
+            
+            <div class="options-container">
+                <!-- Words mode options -->
+                <div class="options words-options active">
+                    <button class="option-btn active" data-value="10">10</button>
+                    <button class="option-btn" data-value="25">25</button>
+                    <button class="option-btn" data-value="50">50</button>
+                    <button class="option-btn" data-value="100">100</button>
+                </div>
+                
+                <!-- Time mode options -->
+                <div class="options time-options">
+                    <button class="option-btn active" data-value="15">15s</button>
+                    <button class="option-btn" data-value="30">30s</button>
+                    <button class="option-btn" data-value="60">60s</button>
+                    <button class="option-btn" data-value="120">120s</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stats Display -->
+        <div class="stats-container glass">
+            <div class="stat-item">
+                <div class="stat-label">WPM</div>
+                <div class="stat-value" id="wpm">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">RAW WPM</div>
+                <div class="stat-value" id="raw-wpm">0</div>
+            </div>
+            <div class="stat-item">
+                <div class="stat-label">Accuracy</div>
+                <div class="stat-value" id="accuracy">100%</div>
+            </div>
+            <div class="stat-item" id="timer-display">
+                <div class="stat-label">Time</div>
+                <div class="stat-value" id="timer">--</div>
+            </div>
+        </div>
+
+        <!-- Typing Area -->
+        <div class="typing-container glass">
+            <div class="words-display" id="words-display"></div>
+            <input 
+                type="text" 
+                id="input-field" 
+                class="input-field" 
+                autocomplete="off"
+                autocorrect="off"
+                autocapitalize="off"
+                spellcheck="false"
+                placeholder="Click here or press any key to start..."
+            >
+        </div>
+
+        <!-- Results Modal -->
+        <div class="modal" id="results-modal">
+            <div class="modal-content glass">
+                <h2>Test Complete! 🎉</h2>
+                
+                <div class="results-grid">
+                    <div class="result-item">
+                        <div class="result-label">WPM</div>
+                        <div class="result-value" id="final-wpm">0</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">RAW WPM</div>
+                        <div class="result-value" id="final-raw-wpm">0</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Accuracy</div>
+                        <div class="result-value" id="final-accuracy">100%</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Correct</div>
+                        <div class="result-value" id="final-correct">0</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Incorrect</div>
+                        <div class="result-value" id="final-incorrect">0</div>
+                    </div>
+                    <div class="result-item">
+                        <div class="result-label">Time</div>
+                        <div class="result-value" id="final-time">0s</div>
+                    </div>
+                </div>
+
+                <div class="chart-container">
+                    <canvas id="wpm-chart"></canvas>
+                </div>
+
+                <div class="modal-buttons">
+                    <button class="btn-primary" onclick="restartTest()">
+                        <span>↻</span> Try Again
+                    </button>
+                    <button class="btn-secondary" onclick="closeModal()">Close</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Footer -->
+        <footer class="footer">
+            <p>Press <kbd>Tab</kbd> + <kbd>Enter</kbd> to restart • <kbd>Esc</kbd> to reset</p>
+        </footer>
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>
