@@ -316,65 +316,129 @@ function showResults() {
 }
 
 function createWPMChart() {
-    const ctx = document.getElementById('wpm-chart').getContext('2d');
+    const canvas = document.getElementById('wpm-chart');
+    const ctx = canvas.getContext('2d');
     
-    // Clear existing chart if any
-    if (window.wpmChart) {
-        window.wpmChart.destroy();
+    // Set canvas size
+    const width = canvas.width = canvas.offsetWidth * 2; // Higher resolution
+    const height = canvas.height = 400;
+    
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height);
+    
+    if (gameState.wpmHistory.length === 0) {
+        ctx.font = '20px sans-serif';
+        ctx.fillStyle = '#6b7280';
+        ctx.textAlign = 'center';
+        ctx.fillText('No data to display', width / 2, height / 2);
+        return;
     }
     
     // Prepare data
-    const labels = gameState.wpmHistory.map(entry => entry.time.toFixed(0) + 's');
     const wpmData = gameState.wpmHistory.map(entry => entry.wpm);
+    const maxWpm = Math.max(...wpmData, 1);
+    const padding = 60;
+    const graphWidth = width - padding * 2;
+    const graphHeight = height - padding * 2;
     
-    window.wpmChart = new Chart(ctx, {
-        type: 'line',
-        data: {
-            labels: labels,
-            datasets: [{
-                label: 'WPM',
-                data: wpmData,
-                borderColor: 'rgb(99, 102, 241)',
-                backgroundColor: 'rgba(99, 102, 241, 0.1)',
-                tension: 0.4,
-                fill: true,
-                pointRadius: 3,
-                pointHoverRadius: 6
-            }]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: true,
-            plugins: {
-                legend: {
-                    display: false
-                },
-                title: {
-                    display: true,
-                    text: 'WPM Over Time',
-                    font: {
-                        size: 16,
-                        weight: 'bold'
-                    }
-                }
-            },
-            scales: {
-                y: {
-                    beginAtZero: true,
-                    title: {
-                        display: true,
-                        text: 'Words Per Minute'
-                    }
-                },
-                x: {
-                    title: {
-                        display: true,
-                        text: 'Time'
-                    }
-                }
+    // Draw background
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+    ctx.fillRect(0, 0, width, height);
+    
+    // Draw title
+    ctx.font = 'bold 32px sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.textAlign = 'center';
+    ctx.fillText('WPM Over Time', width / 2, 40);
+    
+    // Draw axes
+    ctx.strokeStyle = '#d1d5db';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(padding, padding);
+    ctx.lineTo(padding, height - padding);
+    ctx.lineTo(width - padding, height - padding);
+    ctx.stroke();
+    
+    // Draw Y-axis labels
+    ctx.font = '20px sans-serif';
+    ctx.fillStyle = '#6b7280';
+    ctx.textAlign = 'right';
+    const ySteps = 5;
+    for (let i = 0; i <= ySteps; i++) {
+        const y = height - padding - (graphHeight / ySteps) * i;
+        const value = Math.round((maxWpm / ySteps) * i);
+        ctx.fillText(value.toString(), padding - 10, y + 7);
+        
+        // Draw horizontal grid lines
+        ctx.strokeStyle = '#e5e7eb';
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(padding, y);
+        ctx.lineTo(width - padding, y);
+        ctx.stroke();
+    }
+    
+    // Draw Y-axis label
+    ctx.save();
+    ctx.translate(20, height / 2);
+    ctx.rotate(-Math.PI / 2);
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.textAlign = 'center';
+    ctx.fillText('Words Per Minute', 0, 0);
+    ctx.restore();
+    
+    // Draw X-axis label
+    ctx.font = 'bold 24px sans-serif';
+    ctx.fillStyle = '#1f2937';
+    ctx.textAlign = 'center';
+    ctx.fillText('Time (seconds)', width / 2, height - 10);
+    
+    // Draw line graph
+    if (wpmData.length > 0) {
+        const xStep = graphWidth / (wpmData.length - 1 || 1);
+        
+        // Draw filled area
+        ctx.fillStyle = 'rgba(99, 102, 241, 0.1)';
+        ctx.beginPath();
+        ctx.moveTo(padding, height - padding);
+        wpmData.forEach((wpm, index) => {
+            const x = padding + xStep * index;
+            const y = height - padding - (wpm / maxWpm) * graphHeight;
+            ctx.lineTo(x, y);
+        });
+        ctx.lineTo(padding + xStep * (wpmData.length - 1), height - padding);
+        ctx.closePath();
+        ctx.fill();
+        
+        // Draw line
+        ctx.strokeStyle = 'rgb(99, 102, 241)';
+        ctx.lineWidth = 4;
+        ctx.lineJoin = 'round';
+        ctx.lineCap = 'round';
+        ctx.beginPath();
+        wpmData.forEach((wpm, index) => {
+            const x = padding + xStep * index;
+            const y = height - padding - (wpm / maxWpm) * graphHeight;
+            if (index === 0) {
+                ctx.moveTo(x, y);
+            } else {
+                ctx.lineTo(x, y);
             }
-        }
-    });
+        });
+        ctx.stroke();
+        
+        // Draw points
+        ctx.fillStyle = 'rgb(99, 102, 241)';
+        wpmData.forEach((wpm, index) => {
+            const x = padding + xStep * index;
+            const y = height - padding - (wpm / maxWpm) * graphHeight;
+            ctx.beginPath();
+            ctx.arc(x, y, 6, 0, Math.PI * 2);
+            ctx.fill();
+        });
+    }
 }
 
 function closeModal() {
