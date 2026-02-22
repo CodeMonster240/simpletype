@@ -17,6 +17,7 @@
     --shadow: 0 8px 32px 0 rgba(31, 38, 135, 0.15);
     --shadow-hover: 0 12px 40px 0 rgba(31, 38, 135, 0.2);
     --radius: 20px;
+    --line-height: 2.5rem;
 }
 
 body {
@@ -199,20 +200,26 @@ body {
 .typing-container {
     padding: 40px;
     margin-bottom: 20px;
-    min-height: 300px;
+    min-height: 280px;
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
+.words-viewport {
+    position: relative;
+    height: calc(var(--line-height) * 3);
+    overflow: hidden;
+}
+
 .words-display {
     font-size: 1.75rem;
-    line-height: 2.5rem;
+    line-height: var(--line-height);
     color: var(--text-light);
     user-select: none;
     font-family: 'Monaco', 'Menlo', monospace;
     letter-spacing: 0.5px;
-    min-height: 180px;
+    transition: transform 0.35s ease;
 }
 
 .word {
@@ -220,6 +227,37 @@ body {
     margin: 0 8px 8px 0;
     position: relative;
     transition: color 0.1s ease;
+}
+
+.char {
+    display: inline-block;
+}
+
+.char.correct {
+    color: var(--correct-color);
+}
+
+.char.incorrect {
+    color: var(--incorrect-color);
+}
+
+.caret {
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 2px;
+    height: calc(var(--line-height) * 0.9);
+    background: var(--primary-color);
+    border-radius: 2px;
+    box-shadow: 0 0 10px rgba(99, 102, 241, 0.7);
+    transition: transform 0.08s ease, opacity 0.2s ease;
+    animation: caretBlink 1s step-end infinite;
+    pointer-events: none;
+}
+
+@keyframes caretBlink {
+    0%, 50% { opacity: 1; }
+    51%, 100% { opacity: 0.2; }
 }
 
 .word.correct {
@@ -238,25 +276,17 @@ body {
 }
 
 .input-field {
-    width: 100%;
-    padding: 15px 20px;
-    font-size: 1.25rem;
-    border: 2px solid transparent;
-    border-radius: 12px;
-    background: rgba(255, 255, 255, 0.5);
-    color: var(--text-color);
-    font-family: 'Monaco', 'Menlo', monospace;
-    transition: all 0.3s ease;
+    position: absolute;
+    width: 0;
+    height: 0;
+    padding: 0;
+    border: 0;
+    opacity: 0;
     outline: none;
 }
 
-.input-field:focus {
-    border-color: var(--primary-color);
-    background: rgba(255, 255, 255, 0.8);
-}
-
 .input-field.error {
-    border-color: var(--incorrect-color);
+    outline: 2px solid var(--incorrect-color);
 }
 
 /* Modal */
@@ -411,13 +441,16 @@ kbd {
 
 /* Responsive */
 @media (max-width: 768px) {
+    :root {
+        --line-height: 2.25rem;
+    }
+
     .logo {
         font-size: 2rem;
     }
 
     .words-display {
         font-size: 1.5rem;
-        line-height: 2.25rem;
     }
 
     .stat-value {

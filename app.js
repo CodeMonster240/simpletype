@@ -40,6 +40,8 @@ let gameState = {
 
 // DOM elements
 const wordsDisplay = document.getElementById('words-display');
+const wordsViewport = document.getElementById('words-viewport');
+const caret = document.getElementById('caret');
 const inputField = document.getElementById('input-field');
 const wpmElement = document.getElementById('wpm');
 const rawWpmElement = document.getElementById('raw-wpm');
@@ -108,6 +110,11 @@ function setupEventListeners() {
             inputField.focus();
         }
     });
+
+    window.addEventListener('resize', () => {
+        updateScroll();
+        updateCaret();
+    });
     
     // Keyboard shortcuts
     document.addEventListener('keydown', (e) => {
@@ -134,29 +141,125 @@ function renderWords() {
     gameState.words.forEach((word, index) => {
         const wordSpan = document.createElement('span');
         wordSpan.className = 'word';
-        wordSpan.textContent = word;
+
+        word.split('').forEach(char => {
+            const charSpan = document.createElement('span');
+            charSpan.className = 'char';
+            charSpan.textContent = char;
+            wordSpan.appendChild(charSpan);
+        });
+
         if (index === 0) {
             wordSpan.classList.add('current');
         }
         wordsDisplay.appendChild(wordSpan);
     });
+
+    updateScroll();
+    updateCaret();
+}
+
+function updateCurrentWordChars(inputValue) {
+    const wordElements = wordsDisplay.querySelectorAll('.word');
+    const currentWordElement = wordElements[gameState.currentWordIndex];
+    if (!currentWordElement) return;
+
+    const charSpans = currentWordElement.querySelectorAll('.char');
+    charSpans.forEach(span => span.classList.remove('correct', 'incorrect'));
+
+    const maxIndex = Math.min(inputValue.length, charSpans.length);
+    for (let i = 0; i < maxIndex; i++) {
+        if (inputValue[i] === charSpans[i].textContent) {
+            charSpans[i].classList.add('correct');
+        } else {
+            charSpans[i].classList.add('incorrect');
+        }
+    }
+}
+
+function finalizeWordChars(wordIndex, inputValue) {
+    const wordElements = wordsDisplay.querySelectorAll('.word');
+    const currentWordElement = wordElements[wordIndex];
+    if (!currentWordElement) return;
+
+    const charSpans = currentWordElement.querySelectorAll('.char');
+    for (let i = 0; i < charSpans.length; i++) {
+        if (inputValue[i] === charSpans[i].textContent) {
+            charSpans[i].classList.add('correct');
+            charSpans[i].classList.remove('incorrect');
+        } else {
+            charSpans[i].classList.add('incorrect');
+            charSpans[i].classList.remove('correct');
+        }
+    }
+}
+
+function updateCaret() {
+    const wordElements = wordsDisplay.querySelectorAll('.word');
+    const currentWordElement = wordElements[gameState.currentWordIndex];
+    if (!currentWordElement || !caret || !wordsViewport) return;
+
+    const charSpans = currentWordElement.querySelectorAll('.char');
+    const inputValue = inputField.value;
+    const wordsRect = wordsViewport.getBoundingClientRect();
+
+    let caretLeft = currentWordElement.offsetLeft;
+    let caretTop = currentWordElement.offsetTop;
+
+    if (charSpans.length > 0) {
+        if (inputValue.length === 0) {
+            const firstRect = charSpans[0].getBoundingClientRect();
+            caretLeft = firstRect.left - wordsRect.left;
+            caretTop = firstRect.top - wordsRect.top;
+        } else if (inputValue.length >= charSpans.length) {
+            const lastRect = charSpans[charSpans.length - 1].getBoundingClientRect();
+            caretLeft = lastRect.right - wordsRect.left;
+            caretTop = lastRect.top - wordsRect.top;
+        } else {
+            const currentRect = charSpans[inputValue.length].getBoundingClientRect();
+            caretLeft = currentRect.left - wordsRect.left;
+            caretTop = currentRect.top - wordsRect.top;
+        }
+    }
+
+    caret.style.transform = `translate(${caretLeft}px, ${caretTop}px)`;
+}
+
+function updateScroll() {
+    if (!wordsViewport) return;
+
+    const wordElements = wordsDisplay.querySelectorAll('.word');
+    const currentWordElement = wordElements[gameState.currentWordIndex];
+    if (!currentWordElement) return;
+
+    const lineHeight = parseFloat(getComputedStyle(wordsDisplay).lineHeight);
+    const viewportHeight = wordsViewport.clientHeight;
+    const targetTop = currentWordElement.offsetTop;
+    const desiredScroll = targetTop - lineHeight;
+    const maxScroll = Math.max(0, wordsDisplay.scrollHeight - viewportHeight);
+    const clampedScroll = Math.min(Math.max(desiredScroll, 0), maxScroll);
+
+    wordsDisplay.style.transform = `translateY(-${clampedScroll}px)`;
 }
 
 function handleInput(e) {
     if (!gameState.started) {
         startTest();
     }
-    
+
     const inputValue = e.target.value;
     const currentWord = gameState.words[gameState.currentWordIndex];
-    
+
     // Check if word matches so far
     if (currentWord.startsWith(inputValue)) {
         inputField.classList.remove('error');
     } else {
         inputField.classList.add('error');
     }
-    
+
+    updateCurrentWordChars(inputValue);
+    updateScroll();
+    updateCaret();
     updateStats();
 }
 
@@ -170,13 +273,15 @@ function handleKeydown(e) {
 function checkWord() {
     const inputValue = inputField.value.trim();
     const currentWord = gameState.words[gameState.currentWordIndex];
-    
+
     if (inputValue === '') return;
-    
+
     // Update word styling
     const wordElements = wordsDisplay.querySelectorAll('.word');
     const currentWordElement = wordElements[gameState.currentWordIndex];
-    
+
+    finalizeWordChars(gameState.currentWordIndex, inputValue);
+
     if (inputValue === currentWord) {
         currentWordElement.classList.add('correct');
         gameState.correctWords++;
@@ -186,28 +291,31 @@ function checkWord() {
         gameState.incorrectWords++;
         gameState.incorrectChars += currentWord.length + 1;
     }
-    
+
     currentWordElement.classList.remove('current');
     gameState.typedChars += inputValue.length + 1; // +1 for space
-    
+
     // Move to next word
     gameState.currentWordIndex++;
-    
+
     // Check if test is complete
     if (gameState.mode === 'words' && gameState.currentWordIndex >= gameState.words.length) {
         endTest();
         return;
     }
-    
+
     // Add current class to next word
     if (gameState.currentWordIndex < gameState.words.length) {
         wordElements[gameState.currentWordIndex].classList.add('current');
     }
-    
+
     // Clear input
     inputField.value = '';
     inputField.classList.remove('error');
-    
+
+    updateCurrentWordChars('');
+    updateScroll();
+    updateCaret();
     updateStats();
 }
 
